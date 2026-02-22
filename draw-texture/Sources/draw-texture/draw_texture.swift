@@ -52,18 +52,21 @@ class ViewDelegate : NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        renderer.draw(view: view)
+        guard let drawable = view.currentDrawable else {
+            return
+        }
+        renderer.draw(drawable: drawable)
     }
 }
 
 class Renderer {
     private let device: MTLDevice
-    private let commnadQueue: MTLCommandQueue
+    private let commandQueue: MTLCommandQueue
     private var texture: MTLTexture?
     
     init(device: MTLDevice, textureName: String, extensionName: String) {
         self.device = device
-        self.commnadQueue = device.makeCommandQueue()!
+        self.commandQueue = device.makeCommandQueue()!
         let textureLoader = MTKTextureLoader(device: device)
         let url = Bundle.module.url(forResource: textureName, withExtension: extensionName)
         do {
@@ -73,12 +76,10 @@ class Renderer {
         }
     }
     
-    @MainActor
-    func draw(view: MTKView) {
+    func draw(drawable : CAMetalDrawable) {
         guard
-            let commandBuffer = self.commnadQueue.makeCommandBuffer(),
+            let commandBuffer = self.commandQueue.makeCommandBuffer(),
             let blitEncoder = commandBuffer.makeBlitCommandEncoder(),
-            let drawable = view.currentDrawable,
             let texture = self.texture
         else {
             return
