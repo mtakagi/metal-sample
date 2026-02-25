@@ -28,8 +28,6 @@ class AppDelegate : NSObject, NSApplicationDelegate {
         view.device = device
         view.delegate = self.viewDelegate
         view.colorPixelFormat = .bgra8Unorm_srgb
-        view.clearColor = MTLClearColor(red: 1.0, green: 0, blue: 0, alpha: 1)
-        view.framebufferOnly = false
         
         self.window.contentView = view
         self.window.makeKeyAndOrderFront(nil)
@@ -64,8 +62,8 @@ class Renderer {
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
     private let vertexBuffer: MTLBuffer
-    private let texCordBuffer: MTLBuffer
-    private let renderPassDesciriptor = MTLRenderPassDescriptor()
+    private let texCoordBuffer: MTLBuffer
+    private let renderPassDescriptor = MTLRenderPassDescriptor()
     private var texture: MTLTexture?
     
     private static let vertexData: [Float] = [-1, -1, 0, 1,
@@ -118,21 +116,25 @@ class Renderer {
         } catch {
             print("Failed to load texture: \(textureName).\(extensionName)")
         }
-        pipelineDescriptor.colorAttachments[0].pixelFormat = self.texture!.pixelFormat
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
         self.pipelineState = try! self.device.makeRenderPipelineState(descriptor: pipelineDescriptor)
 
         let vertexDataSize = MemoryLayout<Float>.size * Renderer.vertexData.count
         self.vertexBuffer = device.makeBuffer(bytes: Renderer.vertexData, length: vertexDataSize)!
         let textCordDataSize = MemoryLayout<Float>.size * Renderer.texCordData.count
-        self.texCordBuffer = device.makeBuffer(bytes: Renderer.texCordData, length: textCordDataSize)!
+        self.texCoordBuffer = device.makeBuffer(bytes: Renderer.texCordData, length: textCordDataSize)!
+        
+        self.renderPassDescriptor.colorAttachments[0].loadAction = .clear
+        self.renderPassDescriptor.colorAttachments[0].storeAction = .store
+        self.renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
     }
     
     func draw(drawable : CAMetalDrawable) {
-        self.renderPassDesciriptor.colorAttachments[0].texture = drawable.texture
+        self.renderPassDescriptor.colorAttachments[0].texture = drawable.texture
 
         guard
             let commandBuffer = self.commandQueue.makeCommandBuffer(),
-            let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: self.renderPassDesciriptor),
+            let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: self.renderPassDescriptor),
             let texture = self.texture
         else {
             return
@@ -140,7 +142,7 @@ class Renderer {
 
         renderCommandEncoder.setRenderPipelineState(self.pipelineState)
         renderCommandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        renderCommandEncoder.setVertexBuffer(texCordBuffer, offset: 0, index: 1)
+        renderCommandEncoder.setVertexBuffer(texCoordBuffer, offset: 0, index: 1)
         renderCommandEncoder.setFragmentTexture(texture, index: 0)
         renderCommandEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         
