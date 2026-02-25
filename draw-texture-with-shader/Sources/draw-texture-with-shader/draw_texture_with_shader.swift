@@ -70,7 +70,7 @@ class Renderer {
                                                1, -1, 0, 1,
                                               -1,  1, 0, 1,
                                                1,  1, 0, 1]
-    private static let texCordData: [Float] = [0, 1,
+    private static let texCoordData: [Float] = [0, 1,
                                                1, 1,
                                                0, 0,
                                                1, 0]
@@ -121,8 +121,8 @@ class Renderer {
 
         let vertexDataSize = MemoryLayout<Float>.size * Renderer.vertexData.count
         self.vertexBuffer = device.makeBuffer(bytes: Renderer.vertexData, length: vertexDataSize)!
-        let textCordDataSize = MemoryLayout<Float>.size * Renderer.texCordData.count
-        self.texCoordBuffer = device.makeBuffer(bytes: Renderer.texCordData, length: textCordDataSize)!
+        let textCordDataSize = MemoryLayout<Float>.size * Renderer.texCoordData.count
+        self.texCoordBuffer = device.makeBuffer(bytes: Renderer.texCoordData, length: textCordDataSize)!
         
         self.renderPassDescriptor.colorAttachments[0].loadAction = .clear
         self.renderPassDescriptor.colorAttachments[0].storeAction = .store
